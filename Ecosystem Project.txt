@@ -1,0 +1,712 @@
+/*
+*********************************SECTION ONE************************************************
+Object: 
+
+Environment: Pond/Tree/Cloud/Sun/Apples
+Animals: Swimming Fish 
+         Greedy Worm
+         Angry Bird
+*********************************SECTION TWO************************************************
+Object: 
+
+1. Fish Speed Interactive
+2. Bird Fly Across worm and Eat ---> Force Addition
+3. Force: 
+*** Force Addition ---> Bird 
+*** Gravity ---> All
+*** Wind ---> Bird
+*** Attraction ---> Fish
+*** Repulsion ---> Worm +++ Bird
+*********************************SECTION THREE**********************************************
+Object: 
+
+Addition: Heading Toward
+Addition: Bird +++ Mouse Interactive
+Addition: Slithering Snake
+**********************************SECTION FOUR**********************************************
+Object:
+
+Addition: Swimming Pond Change
+Modification: Apple Array 
+Addition: Restart 
+***********************************SECTION FIVE*********************************************
+Final Object: 
+
+Modification: Friction === Worm +++ Fish
+Modification: Worm &&& Apple === Attraction
+Modification: Restart
+********************************************************************************************
+*/
+
+//*********************************Environment**********************************************
+angleMode = "radians";
+var grass = function(x, y) {
+    this.x = x;
+    this.y = y;
+    this.w = 30;
+    this.image = getImage("cute/TreeUgly");
+};
+
+grass.prototype.display = function() {
+    image(this.image, this.x, this.y, this.w, this.w);
+};
+
+var pond = function(x, y, w, h) {
+    this.x = x;
+    this.y = y;
+    this.w = w;
+    this.h = h;
+};
+
+pond.prototype.display = function() {
+    fill(19, 79, 102);
+    noStroke();
+    ellipseMode(CENTER);
+    ellipse(this.x, this.y, this.w, this.h);
+};
+
+var tree = function(x, y, w, h) {
+    this.x = x;
+    this.y = y;
+    this.w = w;
+    this.h = h;
+    this.r = 250;
+};
+
+tree.prototype.display = function() {
+    fill(82, 29, 4);
+    rect(this.x, this.y, this.w, this.h);
+    fill(15, 191, 6);
+    ellipse(this.x+30, this.y-60, this.r, this.r);
+    
+    for (var i = 0; i < 24; i++) {
+        pushMatrix();
+        translate(this.x+30, this.y-60);
+        scale(0.4);
+        rotate(50*i);
+        ellipse(this.x-60, this.y, this.r/3, this.r/2);
+        popMatrix();
+    }
+};
+
+var cloud = function(x, y) {
+    this.x = x;
+    this.y = y;
+    this.v = 2;
+    this.r = 30;
+};
+
+cloud.prototype.display = function() {
+    fill(250, 250, 250);
+    noStroke();
+    ellipse(this.x, this.y, this.r, this.r);
+    ellipse(this.x+30, this.y, this.r+30, this.r+20);
+    ellipse(this.x+60, this.y, this.r, this.r);
+};
+
+cloud.prototype.move = function() {
+    this.x = this.x + this.v;
+    if (this.x > width) {
+        this.x = 0;
+    }
+};
+
+var sun = function(x, y) {
+    this.x = x;
+    this.y = y;
+    this.r = 80;
+};
+
+sun.prototype.display = function() {
+    fill(245, 245, 12);
+    ellipse(this.x, this.y, this.r, this.r);
+    
+    for (var i = 0; i < 30; i++) {
+        pushMatrix();
+        translate(this.x, this.y);
+        scale(0.25);
+        rotate(15*i);
+        triangle(100,100,180,20,20,20);
+        popMatrix();
+    }
+};
+
+sun.prototype.sunUp = function() {
+    this.display();
+    this.x += 1;
+    this.y -= 0.5;
+};
+
+sun.prototype.sunDown = function() {
+    this.display();
+    this.x += 1;
+    this.y += 0.5;
+};
+
+var apple = function(x, y) {
+    this.position = new PVector(x, y);
+    this.v = 2;
+    this.r = 20;
+    this.mass = 0.005;
+    this.leaveTree = false;
+};
+
+apple.prototype.display = function() {
+    fill(255, 0, 0);
+    ellipseMode(CENTER);
+    ellipse(this.position.x, this.position.y, this.r, this.r);
+};
+
+apple.prototype.constrain = function(x, y) {
+    return x > (this.position.x-this.r/2) && x < (this.position.x+this.r/2) && y > (this.position.y-this.r/2) && y < (this.position.y+this.r/2);
+};
+
+apple.prototype.update = function() {
+    if (this.constrain(mouseX, mouseY)) {
+        this.leaveTree = true;
+    }
+};
+
+apple.prototype.fall = function() {
+    if (this.leaveTree) {
+        this.v = this.v + 0.3;
+        this.position.y = this.position.y + this.v;
+    }
+};
+
+var particle = function(position) {
+    this.acceleration = new PVector(0, 0.05);
+    this.velocity = new PVector(random(-2,2),random(-1,0));
+    this.position = position.get();
+    this.r = 10;
+    this.timeTodie = 150;
+    this.falling = false;
+};
+
+particle.prototype.display = function() {
+    noStroke();
+    fill(255,255,255, this.timeTodie);
+    ellipse(this.position.x, this.position.y, this.r, this.r);
+};
+
+particle.prototype.run = function() {
+    this.falling = true;
+};
+
+particle.prototype.update = function() {
+    if (this.falling) {
+        this.velocity.add(this.acceleration);
+        this.position.add(this.velocity);
+        this.timeTodie -= 2;
+    }
+};
+
+particle.prototype.isDead = function() {
+    if (this.timeTodie < 0) {
+        return true;
+    } else {
+        return false;
+    }
+};
+
+//*********************************Call Function!!!!!***************************************
+var Pond = new pond(100, 330, 200, 100);
+var Cloud = new cloud(100,50);
+var Tree = new tree(250, 200, 60, 200);
+var Sun = new sun(0,100);
+
+var Apple = [];
+for (var i = 0; i < 4; i++) {
+    for (var g = 0; g < 4; g++) {
+        Apple.push(new apple(random(30,50) *i + random(200,250), random(30,50)*g + random(70,90)));
+    }
+}
+
+var Grass = [];
+for (var k = 0; k < 20; k++) {
+    Grass.push(new grass(20*k, 230));
+}
+
+var GrassDui = [];
+for (var g = 0; g < 20; g++) {
+    for (var z = 0; z < 10; z++) {
+        GrassDui.push(new grass(200+20*g, 250+20*z));
+    }
+}
+
+var GrassDei = [];
+for (var a = 0; a < 10; a++) {
+    for (var b = 0; b < 5; b++) {
+        GrassDei.push(new grass(20*a, 130+20*b));
+    }
+}
+
+var p = [];
+
+//*******************************Animal!!!!!************************************************
+var worm = function(x, y) {
+    this.position = new PVector(x, y);
+    this.velocity = new PVector(0, 0);
+    this.acceleration = new PVector(0, 0);
+    this.mass = 1;
+};
+
+worm.prototype.display = function() {
+    var angle = this.velocity.heading();
+    
+    pushMatrix();
+    translate(this.position.x, this.position.y);
+    rotate(angle);
+    fill(170, 209, 195);
+    noStroke();
+    ellipseMode(CENTER);
+    ellipse(0, 0, 10, 10);
+    ellipseMode(CENTER);
+    ellipse(5, 5, 10, 10);
+    ellipseMode(CENTER);
+    ellipse(10, 10, 10, 10);
+    stroke(3, 3, 3);
+    strokeWeight(5);
+    point(10, 10);
+    popMatrix();
+};
+
+worm.prototype.applyForce = function(force) {
+    var f = PVector.div(force, this.mass);
+    this.acceleration.add(f);
+};
+
+worm.prototype.update = function() {
+    this.velocity.add(this.acceleration);
+    this.position.add(this.velocity);
+    this.acceleration.mult(0);
+};
+
+worm.prototype.repulsion = function(m) {
+    var repulsion = PVector.sub(this.position, m.position);
+    var distance = repulsion.mag();
+    var G = 1;
+    
+    distance = constrain(distance, 50, 200);
+    repulsion.normalize();
+    
+    var strength = G/(distance*distance);
+    repulsion.mult(-1);
+    repulsion.mult(strength);
+    
+    return repulsion;
+};
+
+worm.prototype.attraction = function(a) {
+    var attraction = PVector.sub(a.position, this.position);
+    var distance = attraction.mag();
+    var G = 1;
+    
+    distance = constrain(distance, 1, 5);
+    attraction.normalize();
+    
+    var strength = G * a.mass/(distance*distance);
+    attraction.mult(strength);
+    
+    return attraction;
+};
+
+worm.prototype.constrain = function() {
+    if (this.position.x >= Tree.x+120) {
+        this.acceleration.x *= -1;
+        this.velocity.x *= -Math.sign(this.velocity.x)*0.9;
+    }
+    if (this.position.x <= Tree.x-60) {
+        this.acceleration.x *= -1;
+        this.velocity.x *= Math.sign(this.velocity.x)*0.9;
+    }
+    if (this.position.y <= Tree.y-150) {
+        this.acceleration.y *= -1;
+        this.velocity.y *= Math.sign(this.velocity.y)*0.9;
+    }
+    if (this.position.y >= Tree.y+30) {
+        this.acceleration.y *= -1;
+        this.velocity.y *= -Math.sign(this.velocity.y)*0.9;
+    }
+};
+//**************************************
+var Worm = [];
+for (var i = 0; i < 3; i++) {
+    for (var g = 0; g < 2; g++) {
+        Worm.push(new worm (random(40,80)*g + random(230, 280),random(40,80)*i + random(80,100)));
+    }
+}
+//***************************************
+var bird = function(x, y) {
+    this.position = new PVector(x, y);
+    this.velocity = new PVector(0, 0);
+    this.acceleration = new PVector(0, 0);
+    this.w = 50;
+    this.mass = 10;
+    this.topspeed = 6;
+    this.image = getImage("avatars/piceratops-sapling");
+};
+
+bird.prototype.display = function() {
+    image(this.image, this.position.x, this.position.y, this.w, this.w);
+};
+
+bird.prototype.update = function() {
+    var mouse = new PVector(mouseX, mouseY);
+    mouse.x = constrain(mouse.x, 0, 400);
+    mouse.y = constrain(mouse.y, 0, 400);
+    
+    var dir = PVector.sub(mouse, this.position);
+    
+    var mag = dir.mag()/400;
+    dir.normalize();
+    dir.mult(mag);
+    
+    this.acceleration = dir;
+    this.velocity.add(this.acceleration);
+    this.velocity.limit(this.topspeed);
+    this.position.add(this.velocity);
+    this.acceleration.mult(0);
+    this.velocity.mult(0.99);
+};
+
+bird.prototype.applyForce = function(force) {
+    var f = PVector.div(force, this.mass);
+    this.acceleration.add(f);
+};
+
+bird.prototype.eatConstrain = function(m) {
+    return (this.position.x <= (m.position.x + 10) && this.position.x >= (m.position.x - 10) && this.position.y <= (m.position.y + 10) && this.position.y >= (m.position.y - 10));
+};
+
+bird.prototype.eat = function() {
+    for (var i = 0; i < Worm.length; i++) {
+        if (this.eatConstrain(Worm[i])) {
+            Worm[i].position.set(-100, -100);
+            Worm.splice(i,1);
+            this.velocity.mult(1.2);
+        } 
+    }
+};
+
+var fish = function(x, y, fillcolor) {
+    this.position = new PVector(x, y);
+    this.velocity = new PVector(0, 0);
+    this.acceleration = new PVector(0, 0);
+    this.mass = 5;
+    this.w = 20;
+    this.fillcolor = fillcolor;
+};
+
+fish.prototype.display = function() {
+    var angle = this.velocity.heading();
+    
+    noStroke();
+    fill(this.fillcolor);
+    pushMatrix();
+    translate(this.position.x, this.position.y);
+    rotate(angle+PI);
+    scale(0.8);
+    ellipse(10, 10, this.w, this.w);
+    triangle(10, 10, 30, 0, 30, 20);
+    stroke(3, 3, 3);
+    strokeWeight(6);
+    point(10, 10);
+    popMatrix();
+};
+
+fish.prototype.applyForce = function(force) {
+    var f = PVector.div(force, this.mass);
+    this.acceleration.add(f);
+};
+
+fish.prototype.attraction = function(m) {
+    var attraction = PVector.sub(this.position, m.position);
+    var distance = attraction.mag();
+    var G = 1;
+    
+    distance = constrain(distance, 50, 85);
+    attraction.normalize();
+    
+    var strength = (G * this.mass * m.mass)/(distance * distance);
+    
+    attraction.mult(strength);
+    
+    return attraction;
+};
+
+fish.prototype.update = function() {
+    this.velocity.add(this.acceleration);
+    this.position.add(this.velocity);
+    this.acceleration.mult(0);
+};
+
+fish.prototype.constrain = function() {
+    if (this.position.x >= Pond.x + 60) {
+        this.velocity.x *= -Math.sign(this.velocity.x)*0.9;
+        this.acceleration.x *= -1;
+    }
+    if (this.position.x <= Pond.x - 60) {
+        this.velocity.x *= Math.sign(this.velocity.x)*0.9;
+        this.acceleration.x *= -1;
+    }
+    if (this.position.y >= Pond.y + 30) {
+        this.velocity.y *= -Math.sign(this.velocity.y)*0.9;
+        this.acceleration.y *= -1;
+    }
+    if (this.position.y <= Pond.y - 30) {
+        this.velocity.y *= Math.sign(this.velocity.y)*0.9;
+        this.acceleration.y *= -1;
+    }
+};
+
+fish.prototype.mouseTouch = function(mx, my) {
+    return mx < (this.position.x + this.w/2) && mx > (this.position.x - this.w/2) && my < (this.position.y + this.w/2) && my > (this.position.y - this.w/2);
+};
+
+fish.prototype.changeStatus = function() {
+    if (this.mouseTouch(mouseX, mouseY)) {
+        this.velocity.mult(1.05);
+    }
+};
+
+var snake = function(x, y) {
+    this.angle = 0;
+    this.aVelocity = 0.31;
+    this.am = 10;
+    this.x = x;
+    this.y = y;
+};
+
+snake.prototype.display = function() {
+    noFill();
+    stroke(67, 92, 14);
+    strokeWeight(11);
+    
+    beginShape();
+    for (var x = this.x; x <= this.x + 60; x++) {
+        var y = this.y + this.am *sin(this.angle);
+        vertex(x, y);
+        this.angle += this.aVelocity;
+    }
+    endShape();
+    
+    stroke(5, 5, 5);
+    strokeWeight(6);
+    point(this.x + 60, this.y + this.am * sin(this.angle));
+};
+
+//******************************************************************************************
+var Bird = new bird (300, 300);
+
+var Fish = [];
+Fish.push (new fish (100, 300, color(237, 156, 17)));
+Fish.push (new fish (150, 300, color(189, 240, 22)));
+Fish.push (new fish (150, 350, color(22, 227, 118)));
+Fish.push (new fish (100, 350, color(160, 30, 235)));
+
+var snake1 = new snake(0, 200);
+var snake2 = new snake(200, 340);
+//******************************Draw Function!!!!!******************************************
+var Restart = function() {
+    //Sun 
+    if (Sun.x > width && Apple.length === 0 && Worm.length === 0) {
+        Sun.x = 0;
+        Sun.y = 100;
+    //Snake
+        snake1.x = 0;
+        snake2.y = 200;
+        snake2.x = 200;
+        snake2.y = 340;
+    //Apple
+        for (var i = 0; i < 4; i++) {
+            for (var g = 0; g < 4; g++) {
+                Apple.push(new apple(random(30,50) *i + random(200,250), random(30,50)*g + random(70,90)));
+            }
+        }
+    //Worm
+        for (var i = 0; i < 3; i++) {
+            for (var g = 0; g < 2; g++) {
+                Worm.push(new worm (random(40,80)*g + random(230, 280),random(40,80)*i + random(80,120)));
+            }
+        }
+    }
+};
+
+mouseClicked = function() {
+    //Apple
+    for (var i = 0; i < Apple.length; i++) {
+        Apple[i].update();
+    }
+    
+    //Particle
+    if (mouseX <= (Pond.x + 80) && mouseX >= (Pond.x - 80) && mouseY <= (Pond.y + 50) && mouseY >= (Pond.y - 50)) {
+        p.push(new particle (new PVector(mouseX, mouseY)));
+        p.push(new particle (new PVector(mouseX+15, mouseY)));
+        p.push(new particle (new PVector(mouseX+15, mouseY+15)));
+        
+        for (var e = 0; e < p.length; e++) {
+            p[e].run();
+        }
+    }
+    
+    Restart();
+};
+
+var counts = null;
+var fillColor = color(5, 5, 5);
+
+draw = function() {
+    background(fillColor);
+    
+    //Cloud
+    Cloud.display();
+    Cloud.move();
+    
+    //Sun
+    if (Sun.x <= 100) {
+        fillColor = color (map(Sun.x, 0, 100, 5, 10), map(Sun.x, 0, 100, 5, 230), map(Sun.x, 0, 100, 5, 240));
+        Sun.sunUp();
+    }
+    else if (frameCount - counts <= 300) {
+        fillColor = color(10, 230, 240 );
+        Sun.display();
+    }
+    else {
+        fillColor = color (map(Sun.x, 101, width, 10, 5), map(Sun.x, 101, width, 230, 5), map(Sun.x, 101, width, 240, 5));
+        Sun.sunDown();
+    }
+    if (Sun.x === 100) {
+        counts = frameCount;
+    }
+    if (Sun.x > width) {
+        fillColor = color(5, 5, 5);
+    }
+    
+    //Grass
+    for (var k = 0; k < Grass.length; k++) {
+        Grass[k].display();
+    }
+    
+    for (var g = 0; g < GrassDui.length; g++) {
+        GrassDui[g].display();
+    }
+    
+    for (var z = 0; z < GrassDei.length; z++) {
+        GrassDei[z].display();
+    }
+    
+    //Pond+++Tree
+    Pond.display();
+    Tree.display();
+    
+    //Apple
+    for (var i = 0; i < Apple.length; i++) {
+        Apple[i].display();
+        Apple[i].fall();
+        if (Apple[i].y > height) {
+            Apple.splice(i,1);
+        }
+    }
+
+//******************************************************************************************
+    //Worm
+    for (var b = 0; b < Worm.length; b++) {
+        
+        var pushW = new PVector (-0.00000003, -0.00000003);
+        Worm[b].applyForce(pushW);
+        
+        var gravityW = new PVector (0, 0.00000001*Worm[b].mass);
+        Worm[b].applyForce(gravityW);
+        
+        var l = 0.01;
+        var normalW = gravityW.y;
+        var frictionW = Worm[b].velocity.get();
+        frictionW.normalize();
+        frictionW.mult(-1);
+        frictionW.mult(l * normal);
+        Worm[b].applyForce(frictionW);
+        
+        Worm[b].constrain();
+            
+        for (var a = 0; a < Worm.length; a++) {
+            if (a !== b ) {
+                var repulsionW = Worm[a].repulsion(Worm[b]);
+                Worm[b].applyForce(repulsionW);
+            }
+        }
+        Worm[b].display();
+        Worm[b].update();
+    }
+    
+    for (var b = 0; b < Worm.length; b++) { 
+        for (var i = 0; i < Apple.length; i++) {
+            var attractionW = Worm[b].attraction(Apple[i]);
+            Worm[b].applyForce(attractionW);
+        }
+    }
+    
+    //Bird
+    Bird.display();
+    Bird.update();
+    
+    var gravityB = new PVector(0, 0.02*Bird.mass);
+    Bird.applyForce(gravityB);
+    
+    var pushB = new PVector(-0.7, -0.7);
+    Bird.applyForce(pushB);
+    
+    var windB = new PVector(0.45, 0.45);
+    Bird.applyForce(windB);
+    
+    Bird.eat();
+
+    //Fish
+    for (var c = 0; c < Fish.length; c++) {
+        
+        var gravityF = new PVector(0, 0.000000001*Fish[c].mass);
+        Fish[c].applyForce(gravityF);
+        
+        var pushF = new PVector(-0.000000008, -0.000000008);
+        Fish[c].applyForce(pushF);
+        
+        var n = 0.01;
+        var normalF = gravityF.y;
+        var frictionF = Fish[c].velocity.get();
+        frictionF.normalize();
+        frictionF.mult(-1);
+        frictionF.mult(n* normalF);
+        Fish[c].applyForce(frictionF);
+
+        Fish[c].constrain();
+        Fish[c].changeStatus();
+        
+        for (var b = 0; b < Fish.length; b++) {
+            if (b !== c) {
+                var attractionF = Fish[c].attraction(Fish[b]);
+                Fish[b].applyForce(attractionF);
+            }
+        }
+        
+        Fish[c].display();
+        Fish[c].update();
+    }
+    
+    //Snake
+    snake1.display();
+    snake1.x+=0.01;
+    snake1.x = constrain(snake1.x, 0, 100);
+    
+    snake2.display();
+    snake2.x+=0.01;
+    snake2.x = constrain(snake2.x, 200, 330);
+    
+    //Particle
+    for (var e = p.length -1; e >= 0; e--) {
+        p[e].update();
+        p[e].display();
+        if (p[e].isDead()) {
+            p.splice(e,1);
+        }
+    }
+};
